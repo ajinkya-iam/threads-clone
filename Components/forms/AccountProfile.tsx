@@ -19,6 +19,8 @@ import { ChangeEvent, useState } from "react"
 import { Textarea } from "../ui/textarea"
 import { isBase64Image } from "@/lib/utils"
 import { useUploadThing } from "@/lib/uploadthing"
+import { usePathname, useRouter } from "next/navigation"
+import { updateUser } from "@/lib/actions/user.action"
 
 interface Props {
     user: {
@@ -36,6 +38,9 @@ const AccountProfile = ({ user, btnTitle }: Props) => {
 
     const [files, setFiles] = useState<File[]>([])
     const { startUpload } = useUploadThing("media")
+
+    const pathname = usePathname()
+    const router = useRouter()
 
     const form = useForm({
         resolver: zodResolver(UserValidation),
@@ -55,12 +60,12 @@ const AccountProfile = ({ user, btnTitle }: Props) => {
         if (e.target.files && e.target.files.length > 0) {
 
             const file = e.target.files[0]
-            
+
             setFiles(Array.from(e.target.files))
 
             if (!file.type.includes("image")) return
 
-            fileReader.onload =async (event) => {
+            fileReader.onload = async (event) => {
                 const imageDataUrl = event.target?.result?.toString() || ""
                 fieldChange(imageDataUrl)
             }
@@ -75,12 +80,27 @@ const AccountProfile = ({ user, btnTitle }: Props) => {
 
         const hasImageChanged = isBase64Image(blob)
 
-        if(hasImageChanged){
+        if (hasImageChanged) {
             const imgRes = await startUpload(files)
 
-            if(imgRes && imgRes[0].url){
+            if (imgRes && imgRes[0].url) {
                 values.profile_photo = imgRes[0].url
             }
+        }
+
+        await updateUser({
+            username: values.username,
+            userId: user.id,
+            bio: values.bio,
+            image: values.profile_photo,
+            name: values.name,
+            path: pathname
+        })
+
+        if(pathname === '/profile/edit') {
+            router.back()
+        }else{
+            router.push('/')
         }
     }
 
@@ -120,6 +140,7 @@ const AccountProfile = ({ user, btnTitle }: Props) => {
                                     onChange={(e) => handleImage(e, field.onChange)}
                                 />
                             </FormControl>
+                            <FormMessage/>
                         </FormItem>
                     )}
                 />
@@ -137,6 +158,7 @@ const AccountProfile = ({ user, btnTitle }: Props) => {
                                     {...field}
                                 />
                             </FormControl>
+                            <FormMessage/>
                         </FormItem>
                     )}
                 />
@@ -154,6 +176,7 @@ const AccountProfile = ({ user, btnTitle }: Props) => {
                                     {...field}
                                 />
                             </FormControl>
+                            <FormMessage/>
                         </FormItem>
                     )}
                 />
@@ -171,6 +194,7 @@ const AccountProfile = ({ user, btnTitle }: Props) => {
                                     {...field}
                                 />
                             </FormControl>
+                            <FormMessage/>
                         </FormItem>
                     )}
                 />
